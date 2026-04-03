@@ -6,9 +6,59 @@
         xmlns:local="clr-namespace:shelter_map"
         xmlns:esri="http://schemas.esri.com/arcgis/runtime/2013"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="LA Animal Services Shelter Map" Height="600" Width="1000">
     <Grid>
-        <esri:MapView x:Name="MyMapView" />
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="250" />
+        </Grid.ColumnDefinitions>
 
+        <!-- Map -->
+        <esri:MapView x:Name="MyMapView" Grid.Column="0" />
+
+        <!-- Sidebar -->
+        <StackPanel Grid.Column="1" Background="#F5F5F5" Margin="10">
+            <TextBlock Text="LA Animal Services" FontSize="16" 
+               FontWeight="Bold" Margin="0,10,0,5" />
+            <TextBlock Text="Filter by animal type:" 
+               FontSize="12" Foreground="Gray" Margin="0,0,0,10" />
+
+            <!-- Toggle buttons -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                <ToggleButton x:Name="DogsToggle" Content="🐕 Dogs" 
+                      IsChecked="True" Margin="0,0,5,0"
+                      Checked="AnimalToggle_Changed" 
+                      Unchecked="AnimalToggle_Changed" />
+                <ToggleButton x:Name="CatsToggle" Content="🐈 Cats" 
+                      IsChecked="True" Margin="0,0,5,0"
+                      Checked="AnimalToggle_Changed" 
+                      Unchecked="AnimalToggle_Changed" />
+                <ToggleButton x:Name="KittensToggle" Content="🐱 Kittens" 
+                      IsChecked="True"
+                      Checked="AnimalToggle_Changed" 
+                      Unchecked="AnimalToggle_Changed" />
+            </StackPanel>
+
+            <TextBlock Text="Click a shelter to see details" 
+               FontSize="12" Foreground="Gray" Margin="0,0,0,20" />
+
+            <TextBlock x:Name="ShelterName" FontSize="14" 
+               FontWeight="Bold" TextWrapping="Wrap" Margin="0,0,0,5" />
+            <TextBlock x:Name="ShelterAddress" FontSize="11" 
+               Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,15" />
+
+            <TextBlock Text="Animal Counts" FontWeight="Bold" Margin="0,0,0,5" />
+            <TextBlock x:Name="DogCount" FontSize="12" Margin="0,2" />
+            <TextBlock x:Name="CatCount" FontSize="12" Margin="0,2" />
+            <TextBlock x:Name="KittenCount" FontSize="12" Margin="0,2" />
+            <TextBlock x:Name="TotalCount" FontSize="12" 
+               FontWeight="Bold" Margin="0,5,0,15" />
+
+            <TextBlock Text="Save Rate" FontWeight="Bold" Margin="0,0,0,5" />
+            <TextBlock x:Name="SaveRate" FontSize="12" Margin="0,2" />
+            <TextBlock x:Name="DogSaveRate" FontSize="12" Margin="0,2" />
+            <TextBlock x:Name="CatSaveRate" FontSize="12" Margin="0,2" />
+            <TextBlock x:Name="KittenSaveRate" FontSize="12" Margin="0,2" />
+        </StackPanel>
     </Grid>
 </Window>

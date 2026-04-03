@@ -16,6 +16,8 @@ namespace shelter_map
     {
         protected override void OnStartup(StartupEventArgs e)
         {
+            base.OnStartup(e); // let WPF do its thing first
+
             var json = File.ReadAllText("appsettings.json");
             var config = JsonDocument.Parse(json);
             var apiKey = config.RootElement.GetProperty("ArcGisApiKey").GetString();

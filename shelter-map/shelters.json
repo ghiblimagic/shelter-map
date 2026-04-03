@@ -1,0 +1,74 @@
+[
+  {
+    "name": "East Valley Shelter",
+    "address": "14409 Vanowen St, Van Nuys, CA 91405",
+    "cats": 235,
+    "kittens": 54,
+    "dogs": 362,
+    "catsSaved": 205,
+    "kittensSaved": 52,
+    "dogsSaved": 328,
+    "total": 651,
+    "saveRate": 89.86
+  },
+  {
+    "name": "Harbor Shelter",
+    "address": "957 N Gaffey St, San Pedro, CA 90731",
+    "cats": 187,
+    "kittens": 22,
+    "dogs": 163,
+    "catsSaved": 169,
+    "kittensSaved": 19,
+    "dogsSaved": 133,
+    "total": 372,
+    "saveRate": 86.29
+  },
+  {
+    "name": "North Central Shelter",
+    "address": "3201 Lacy St, Los Angeles, CA 90031",
+    "cats": 128,
+    "kittens": 15,
+    "dogs": 300,
+    "catsSaved": 102,
+    "kittensSaved": 13,
+    "dogsSaved": 266,
+    "total": 443,
+    "saveRate": 86.0
+  },
+  {
+    "name": "Chesterfield Square Shelter",
+    "address": "1850 W 60th St, Los Angeles, CA 90047",
+    "cats": 231,
+    "kittens": 29,
+    "dogs": 424,
+    "catsSaved": 213,
+    "kittensSaved": 28,
+    "dogsSaved": 369,
+    "total": 684,
+    "saveRate": 89.18
+  },
+  {
+    "name": "West LA Shelter",
+    "address": "11361 W Pico Blvd, Los Angeles, CA 90064",
+    "cats": 95,
+    "kittens": 10,
+    "dogs": 134,
+    "catsSaved": 91,
+    "kittensSaved": 10,
+    "dogsSaved": 129,
+    "total": 239,
+    "saveRate": 96.23
+  },
+  {
+    "name": "West Valley Shelter",
+    "address": "20655 Plummer St, Chatsworth, CA 91311",
+    "cats": 158,
+    "kittens": 18,
+    "dogs": 240,
+    "catsSaved": 149,
+    "kittensSaved": 18,
+    "dogsSaved": 217,
+    "total": 416,
+    "saveRate": 92.31
+  }
+]
