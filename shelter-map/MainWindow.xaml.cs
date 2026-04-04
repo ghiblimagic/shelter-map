@@ -139,31 +139,65 @@ namespace shelter_map
             return new DrawingBrush
             {
                 TileMode = TileMode.Tile,
-                Viewport = new Rect(0, 0, 10, 20), // ⬅️ bigger tile = wider stripes
-                ViewportUnits = BrushMappingMode.Absolute,
-                Drawing = new GeometryDrawing(
-          null,
-          new Pen(new SolidColorBrush(color), 9),
-          new LineGeometry(new Point(0, 20), new Point(20, 0))
-      )
+                Viewport = new Rect(0, 0, 1, 1), // ⬅️ bigger tile = wider stripes
+                ViewportUnits = BrushMappingMode.RelativeToBoundingBox,
+                Stretch = Stretch.Fill,
+
+
+                Drawing = new DrawingGroup
+                {
+                    Children =
+            {
+                // 1. Solid blue background (geometry is defined in an arbitrary 20x20 space;
+                //    it will be scaled by the brush to the rectangle being painted)
+                // this makes the line look centered
+                new GeometryDrawing(
+                    new SolidColorBrush(color),
+                    null,
+                    new RectangleGeometry(new Rect(0, 0, 20, 20))
+                ),
+
+                   // 2. Horizontal line across the tile (y = 10 in the 20px space -> center after scaling)
+                new GeometryDrawing(
+                    null,
+                    new Pen(Brushes.White, 2),
+                    new LineGeometry(new Point(0, 10), new Point(20, 10))
+                )
+            }
+                }
             };
         }
 
-        // kittens have dots
-        private Brush CreateDotBrush(Color color)
+        // dogs have zigzag
+        private Brush CreateZigzagBrush(Color color)
         {
-            var geometry = new EllipseGeometry(new Point(5, 5), 2, 2);
+            // Use a simple 45° diagonal white line centered in the tile.
+            var group = new DrawingGroup();
+            // ensure clipping so tiles tile cleanly
+            group.ClipGeometry = new RectangleGeometry(new Rect(0, 0, 20, 20));
+
+            // Background
+            group.Children.Add(new GeometryDrawing(
+                new SolidColorBrush(color),
+                null,
+                new RectangleGeometry(new Rect(0, 0, 20, 20))
+            ));
+
+            // Diagonal white line from bottom-left to top-right (centered at 45°)
+            // Use a Pen with desired thickness; the geometry is drawn in 20x20 space and will scale.
+            group.Children.Add(new GeometryDrawing(
+                null,
+                new Pen(Brushes.White, 2),
+                new LineGeometry(new Point(2, 18), new Point(18, 2))
+            ));
 
             return new DrawingBrush
             {
                 TileMode = TileMode.Tile,
-                Viewport = new Rect(0, 0, 14, 14),
-                ViewportUnits = BrushMappingMode.Absolute,
-                Drawing = new GeometryDrawing(
-                  new SolidColorBrush(color),
-                  null,
-                  new EllipseGeometry(new Point(6, 6), 2.5, 2.5)
-        )
+                Viewport = new Rect(0, 0, 1, 1),
+                ViewportUnits = BrushMappingMode.RelativeToBoundingBox,
+                Stretch = Stretch.Fill,
+                Drawing = group
             };
         }
 
@@ -172,7 +206,7 @@ namespace shelter_map
         {
             Color baseColor = outcome switch
             {
-                "euth" => Color.FromRgb(0, 90, 180),     // blue
+                "euth" => Color.FromRgb(0, 90, 180),     // blue 
                 "died" => Color.FromRgb(90, 0, 130),     // purple
                 "missing" => Color.FromRgb(200, 160, 0), // yellow
                 _ => Colors.Gray
@@ -180,9 +214,9 @@ namespace shelter_map
 
             return animal switch
             {
-                "dogs" => new SolidColorBrush(baseColor),
+                "dogs" => CreateZigzagBrush(baseColor),
                 "cats" => CreateStripeBrush(baseColor),
-                "kittens" => CreateDotBrush(baseColor),
+                "kittens" => new SolidColorBrush(baseColor),
                 _ => new SolidColorBrush(baseColor)
             };
         }
@@ -277,7 +311,7 @@ namespace shelter_map
             return new Point(screenPoint.X, screenPoint.Y);
         }
 
-        private void DrawPieChart(Point center, double radius, List<(double value, System.Windows.Media.Brush color)> segments)
+        private void DrawPieChartWithLabels(Point center, double radius, List<(double value, System.Windows.Media.Brush color)> segments)
         {
             if (segments.Sum(s => s.value) == 0) return;
 
@@ -319,6 +353,11 @@ namespace shelter_map
                 PieChartCanvas.Children.Add(ellipse);
 
                 // Then return exits the method early so the regular arc drawing code below never runs.
+
+                // Label for single segment
+                if (nonZero[0].value >= 1)
+                    DrawSliceLabel(center, radius, -Math.PI / 2, Math.PI * 2, (int)nonZero[0].value, 0);
+
                 return;
 
                 // The key insight:
@@ -331,10 +370,15 @@ namespace shelter_map
             double total = segments.Sum(s => s.value);
             double startAngle = -Math.PI / 2;
 
+            // sliceIndex tracks drawn segments (excludes zero-valued segments), this way the staggered labels alternate up/down correctly even when some segments are zero and skipped
+            int sliceIndex = 0;
+
             foreach (var (value, color) in segments)
             {
                 if (value == 0) continue;
+
                 double sweepAngle = (value / total) * 2 * Math.PI;
+                double midAngle = startAngle + sweepAngle / 2;
 
                 var path = new System.Windows.Shapes.Path();
                 var figure = new PathFigure();
@@ -365,8 +409,91 @@ namespace shelter_map
                 path.StrokeThickness = 1.5;
 
                 PieChartCanvas.Children.Add(path);
+
+                if (value >= 1)
+                    DrawSliceLabel(center, radius, startAngle, sweepAngle, (int)value, sliceIndex);
+
+                // Only increment index for segments that are actually drawn
+                sliceIndex++;
+
+
                 startAngle = endAngle;
             }
+        }
+
+        private void DrawSliceLabel(Point center, double radius, double startAngle, double sweepAngle, int value, int sliceIndex)
+        {
+            double midAngle = startAngle + sweepAngle / 2;
+            double leaderLength = 15;
+            double labelOffset = 22;
+
+            // Leader line start (edge of circle)
+            var lineStart = new Point(
+                center.X + radius * Math.Cos(midAngle),
+                center.Y + radius * Math.Sin(midAngle));
+
+            // Leader line end
+            var lineEnd = new Point(
+                center.X + (radius + leaderLength) * Math.Cos(midAngle),
+                center.Y + (radius + leaderLength) * Math.Sin(midAngle));
+
+            // Draw leader line
+            var line = new System.Windows.Shapes.Line
+            {
+                X1 = lineStart.X,
+                Y1 = lineStart.Y,
+                X2 = lineEnd.X,
+                Y2 = lineEnd.Y,
+                Stroke = System.Windows.Media.Brushes.Black,
+                StrokeThickness = 2
+            };
+            PieChartCanvas.Children.Add(line);
+
+            // ensure leader line is on top
+            Panel.SetZIndex(line, 10000);
+
+            // stagger logic
+
+            double staggerAmount = 10;
+
+                      // Alternate up/down
+            double yOffset = (sliceIndex % 2 == 0) ? -staggerAmount : staggerAmount;
+
+            // Label position
+            var labelPos = new Point(
+                    center.X + (radius + labelOffset) * Math.Cos(midAngle),
+                    center.Y + (radius + labelOffset) * Math.Sin(midAngle) + yOffset);
+
+            var text = new TextBlock
+            // TextBlock does not have a border property, so we have to wrap it in a Border
+            {
+                Text = $"{value}",
+                FontSize = 13,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Brushes.Black
+            };
+
+            var border = new Border
+            {
+                Background = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromArgb(120, 0, 0, 0)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(3),
+                Padding = new Thickness(3, 1, 3, 1),
+                Child = text
+            };
+            // Measure the border (NOT the text)
+            border.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            var size = border.DesiredSize;
+
+            // Center the border at the label position
+            Canvas.SetLeft(border, labelPos.X - size.Width / 2);
+            Canvas.SetTop(border, labelPos.Y - size.Height / 2);
+
+            PieChartCanvas.Children.Add(border);
+
+            // ensure label is on top of any pie charts
+            Panel.SetZIndex(border, 10000);
         }
 
         private void RedrawPieCharts()
@@ -412,23 +539,22 @@ namespace shelter_map
                 {
                     var data = GetFilteredNonLive(shelter);
 
-                    segments = new List<(double, Brush)>
-{
-    (data.Euthanasia.Dogs, GetNonLiveColor("dogs", "euth")),
-    (data.Euthanasia.Cats, GetNonLiveColor("cats", "euth")),
-    (data.Euthanasia.Kittens, GetNonLiveColor("kittens", "euth")),
+                    var labeledSegments = new List<(double value, System.Windows.Media.Brush color)>
+    {
+        (data.Euthanasia.Dogs, GetNonLiveColor("dogs", "euth")),
+        (data.Euthanasia.Cats, GetNonLiveColor("cats", "euth")),
+        (data.Euthanasia.Kittens, GetNonLiveColor("kittens", "euth")),
+        (data.Died.Dogs, GetNonLiveColor("dogs", "died")),
+        (data.Died.Cats, GetNonLiveColor("cats", "died")),
+        (data.Died.Kittens, GetNonLiveColor("kittens", "died")),
+        (data.Missing.Dogs, GetNonLiveColor("dogs", "missing")),
+        (data.Missing.Cats, GetNonLiveColor("cats", "missing")),
+        (data.Missing.Kittens, GetNonLiveColor("kittens", "missing"))
+              };
 
-    (data.Died.Dogs, GetNonLiveColor("dogs", "died")),
-    (data.Died.Cats, GetNonLiveColor("cats", "died")),
-    (data.Died.Kittens, GetNonLiveColor("kittens", "died")),
-
-    (data.Missing.Dogs, GetNonLiveColor("dogs", "missing")),
-    (data.Missing.Cats, GetNonLiveColor("cats", "missing")),
-    (data.Missing.Kittens, GetNonLiveColor("kittens", "missing"))
-};
+                    DrawPieChartWithLabels(screen, radius, labeledSegments);
+                    continue;
                 }
-
-                DrawPieChart(screen, radius, segments);
             }
         }
 
@@ -740,6 +866,7 @@ namespace shelter_map
                 Width = 12,
                 Height = 12,
                 Fill = color,
+               
                 Margin = new Thickness(0, 0, 6, 0)
             };
 
@@ -780,20 +907,23 @@ namespace shelter_map
                 LegendHeader.Text = "Non-Live Outcomes";
                 LegendPanel.Children.Clear();
 
+
+                // Use the same base colors as GetNonLiveColor's Color.FromRgb(...) values
+
                 // Euthanasia
-                AddLegendItem("Euthanasia", Brushes.Red);
+                AddLegendItem("Euthanasia", new SolidColorBrush(Color.FromRgb(0, 90, 180)));
                 AddLegendSubItem("Dogs", GetNonLiveColor("dogs", "euth"));
                 AddLegendSubItem("Cats", GetNonLiveColor("cats", "euth"));
                 AddLegendSubItem("Kittens", GetNonLiveColor("kittens", "euth"));
 
                 // Died
-                AddLegendItem("Died in Care", Brushes.Orange);
+                AddLegendItem("Died in Care", new SolidColorBrush(Color.FromRgb(90, 0, 130)));
                 AddLegendSubItem("Dogs", GetNonLiveColor("dogs", "died"));
                 AddLegendSubItem("Cats", GetNonLiveColor("cats", "died"));
                 AddLegendSubItem("Kittens", GetNonLiveColor("kittens", "died"));
 
                 // Missing
-                AddLegendItem("Missing", Brushes.Black);
+                AddLegendItem("Missing", new SolidColorBrush(Color.FromRgb(200, 160, 0)));
                 AddLegendSubItem("Dogs", GetNonLiveColor("dogs", "missing"));
                 AddLegendSubItem("Cats", GetNonLiveColor("cats", "missing"));
                 AddLegendSubItem("Kittens", GetNonLiveColor("kittens", "missing"));
@@ -810,7 +940,9 @@ namespace shelter_map
                 Width = 16,
                 Height = 16,
                 Fill = color,
-                Margin = new Thickness(0, 0, 8, 0)
+                Margin = new Thickness(0, 0, 8, 0),
+               
+
             };
 
             var text = new TextBlock
