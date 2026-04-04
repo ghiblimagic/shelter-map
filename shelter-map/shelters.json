@@ -1,74 +1,386 @@
 [
-  {
-    "name": "East Valley Shelter",
-    "address": "14409 Vanowen St, Van Nuys, CA 91405",
-    "cats": 235,
-    "kittens": 54,
-    "dogs": 362,
-    "catsSaved": 205,
-    "kittensSaved": 52,
-    "dogsSaved": 328,
-    "total": 651,
-    "saveRate": 89.86
-  },
-  {
-    "name": "Harbor Shelter",
-    "address": "957 N Gaffey St, San Pedro, CA 90731",
-    "cats": 187,
-    "kittens": 22,
-    "dogs": 163,
-    "catsSaved": 169,
-    "kittensSaved": 19,
-    "dogsSaved": 133,
-    "total": 372,
-    "saveRate": 86.29
-  },
-  {
-    "name": "North Central Shelter",
-    "address": "3201 Lacy St, Los Angeles, CA 90031",
-    "cats": 128,
-    "kittens": 15,
-    "dogs": 300,
-    "catsSaved": 102,
-    "kittensSaved": 13,
-    "dogsSaved": 266,
-    "total": 443,
-    "saveRate": 86.0
-  },
-  {
-    "name": "Chesterfield Square Shelter",
-    "address": "1850 W 60th St, Los Angeles, CA 90047",
-    "cats": 231,
-    "kittens": 29,
-    "dogs": 424,
-    "catsSaved": 213,
-    "kittensSaved": 28,
-    "dogsSaved": 369,
-    "total": 684,
-    "saveRate": 89.18
-  },
-  {
-    "name": "West LA Shelter",
-    "address": "11361 W Pico Blvd, Los Angeles, CA 90064",
-    "cats": 95,
-    "kittens": 10,
-    "dogs": 134,
-    "catsSaved": 91,
-    "kittensSaved": 10,
-    "dogsSaved": 129,
-    "total": 239,
-    "saveRate": 96.23
-  },
-  {
-    "name": "West Valley Shelter",
-    "address": "20655 Plummer St, Chatsworth, CA 91311",
-    "cats": 158,
-    "kittens": 18,
-    "dogs": 240,
-    "catsSaved": 149,
-    "kittensSaved": 18,
-    "dogsSaved": 217,
-    "total": 416,
-    "saveRate": 92.31
-  }
+    {
+        "name": "East Valley Shelter",
+        "address": "14409 Vanowen St, Van Nuys, CA 91405",
+        "cats": 235,
+        "kittens": 54,
+        "dogs": 362,
+        "total": 651,
+        "catsSaved": 205,
+        "kittensSaved": 52,
+        "dogsSaved": 328,
+        "saveRate": 89.86,
+        "liveOutcomes": {
+            "cats": {
+                "adoptions": 119,
+                "bestFriends": 13,
+                "newHope": 38,
+                "redeemed": 16,
+                "released": 18
+            },
+            "kittens": {
+                "adoptions": 3,
+                "bestFriends": 16,
+                "newHope": 31,
+                "redeemed": 0,
+                "released": 1
+            },
+            "dogs": {
+                "adoptions": 165,
+                "bestFriends": 8,
+                "newHope": 133,
+                "redeemed": 51,
+                "released": 13
+            },
+            "totals": {
+                "adoptions": 287,
+                "bestFriends": 37,
+                "newHope": 202,
+                "redeemed": 67,
+                "released": 32
+            }
+        },
+        "nonLiveOutcomes": {
+            "cats": {
+                "diedInCare": 2,
+                "euthanasia": 28,
+                "missing": 0
+            },
+            "kittens": {
+                "diedInCare": 1,
+                "euthanasia": 1,
+                "missing": 0
+            },
+            "dogs": {
+                "diedInCare": 2,
+                "euthanasia": 32,
+                "missing": 0
+            },
+            "totals": {
+                "euthanasia": 61,
+                "diedInCare": 5,
+                "missing": 0
+            }
+        }
+    },
+    {
+        "name": "Harbor Shelter",
+        "address": "957 N Gaffey St, San Pedro, CA 90731",
+        "cats": 187,
+        "kittens": 22,
+        "dogs": 163,
+        "total": 372,
+        "catsSaved": 169,
+        "kittensSaved": 19,
+        "dogsSaved": 133,
+        "saveRate": 86.29,
+        "liveOutcomes": {
+            "cats": {
+                "adoptions": 71,
+                "bestFriends": 13,
+                "newHope": 15,
+                "redeemed": 1,
+                "released": 73
+            },
+            "kittens": {
+                "adoptions": 3,
+                "bestFriends": 0,
+                "newHope": 8,
+                "redeemed": 0,
+                "released": 0
+            },
+            "dogs": {
+                "adoptions": 87,
+                "bestFriends": 1,
+                "newHope": 26,
+                "redeemed": 26,
+                "released": 6
+            },
+            "totals": {
+                "adoptions": 161,
+                "bestFriends": 14,
+                "newHope": 49,
+                "redeemed": 27,
+                "released": 79
+            }
+        },
+        "nonLiveOutcomes": {
+            "cats": {
+                "diedInCare": 1,
+                "euthanasia": 17,
+                "missing": 0
+            },
+            "kittens": {
+                "diedInCare": 0,
+                "euthanasia": 3,
+                "missing": 0
+            },
+            "dogs": {
+                "diedInCare": 1,
+                "euthanasia": 29,
+                "missing": 0
+            },
+            "totals": {
+                "euthanasia": 49,
+                "diedInCare": 2,
+                "missing": 0
+            }
+        }
+    },
+    {
+        "name": "North Central Shelter",
+        "address": "3201 Lacy St, Los Angeles, CA 90031",
+        "cats": 128,
+        "kittens": 15,
+        "dogs": 300,
+        "total": 443,
+        "catsSaved": 102,
+        "kittensSaved": 13,
+        "dogsSaved": 266,
+        "saveRate": 86.0,
+        "liveOutcomes": {
+            "cats": {
+                "adoptions": 75,
+                "bestFriends": 0,
+                "newHope": 13,
+                "redeemed": 4,
+                "released": 23
+            },
+            "kittens": {
+                "adoptions": 2,
+                "bestFriends": 0,
+                "newHope": 13,
+                "redeemed": 0,
+                "released": 0
+            },
+            "dogs": {
+                "adoptions": 151,
+                "bestFriends": 3,
+                "newHope": 57,
+                "redeemed": 37,
+                "released": 19
+            },
+            "totals": {
+                "adoptions": 228,
+                "bestFriends": 3,
+                "newHope": 83,
+                "redeemed": 41,
+                "released": 42
+            }
+        },
+        "nonLiveOutcomes": {
+            "cats": {
+                "diedInCare": 3,
+                "euthanasia": 23,
+                "missing": 0
+            },
+            "kittens": {
+                "diedInCare": 1,
+                "euthanasia": 1,
+                "missing": 0
+            },
+            "dogs": {
+                "diedInCare": 4,
+                "euthanasia": 30,
+                "missing": 0
+            },
+            "totals": {
+                "euthanasia": 54,
+                "diedInCare": 8,
+                "missing": 0
+            }
+        }
+    },
+    {
+        "name": "Chesterfield Square Shelter",
+        "address": "1850 W 60th St, Los Angeles, CA 90047",
+        "cats": 231,
+        "kittens": 29,
+        "dogs": 424,
+        "total": 684,
+        "catsSaved": 213,
+        "kittensSaved": 28,
+        "dogsSaved": 369,
+        "saveRate": 89.18,
+        "liveOutcomes": {
+            "cats": {
+                "adoptions": 113,
+                "bestFriends": 18,
+                "newHope": 18,
+                "redeemed": 7,
+                "released": 38
+            },
+            "kittens": {
+                "adoptions": 1,
+                "bestFriends": 20,
+                "newHope": 4,
+                "redeemed": 0,
+                "released": 2
+            },
+            "dogs": {
+                "adoptions": 145,
+                "bestFriends": 12,
+                "newHope": 144,
+                "redeemed": 58,
+                "released": 20
+            },
+            "totals": {
+                "adoptions": 259,
+                "bestFriends": 50,
+                "newHope": 166,
+                "redeemed": 65,
+                "released": 60
+            }
+        },
+        "nonLiveOutcomes": {
+            "cats": {
+                "diedInCare": 0,
+                "euthanasia": 18,
+                "missing": 0
+            },
+            "kittens": {
+                "diedInCare": 0,
+                "euthanasia": 1,
+                "missing": 0
+            },
+            "dogs": {
+                "diedInCare": 2,
+                "euthanasia": 52,
+                "missing": 1
+            },
+            "totals": {
+                "euthanasia": 71,
+                "diedInCare": 2,
+                "missing": 1
+            }
+        }
+    },
+    {
+        "name": "West LA Shelter",
+        "address": "11361 W Pico Blvd, Los Angeles, CA 90064",
+        "cats": 95,
+        "kittens": 10,
+        "dogs": 134,
+        "total": 239,
+        "catsSaved": 91,
+        "kittensSaved": 10,
+        "dogsSaved": 129,
+        "saveRate": 96.23,
+        "liveOutcomes": {
+            "cats": {
+                "adoptions": 45,
+                "bestFriends": 2,
+                "newHope": 13,
+                "redeemed": 9,
+                "released": 9
+            },
+            "kittens": {
+                "adoptions": 0,
+                "bestFriends": 1,
+                "newHope": 9,
+                "redeemed": 0,
+                "released": 0
+            },
+            "dogs": {
+                "adoptions": 76,
+                "bestFriends": 0,
+                "newHope": 32,
+                "redeemed": 35,
+                "released": 3
+            },
+            "totals": {
+                "adoptions": 121,
+                "bestFriends": 3,
+                "newHope": 54,
+                "redeemed": 44,
+                "released": 12
+            }
+        },
+        "nonLiveOutcomes": {
+            "cats": {
+                "diedInCare": 1,
+                "euthanasia": 3,
+                "missing": 0
+            },
+            "kittens": {
+                "diedInCare": 0,
+                "euthanasia": 0,
+                "missing": 0
+            },
+            "dogs": {
+                "diedInCare": 2,
+                "euthanasia": 3,
+                "missing": 0
+            },
+            "totals": {
+                "euthanasia": 6,
+                "diedInCare": 3,
+                "missing": 0
+            }
+        }
+    },
+    {
+        "name": "West Valley Shelter",
+        "address": "20655 Plummer St, Chatsworth, CA 91311",
+        "cats": 158,
+        "kittens": 18,
+        "dogs": 240,
+        "total": 416,
+        "catsSaved": 149,
+        "kittensSaved": 18,
+        "dogsSaved": 217,
+        "saveRate": 92.31,
+        "liveOutcomes": {
+            "cats": {
+                "adoptions": 76,
+                "bestFriends": 3,
+                "newHope": 22,
+                "redeemed": 8,
+                "released": 49
+            },
+            "kittens": {
+                "adoptions": 0,
+                "bestFriends": 3,
+                "newHope": 13,
+                "redeemed": 0,
+                "released": 0
+            },
+            "dogs": {
+                "adoptions": 112,
+                "bestFriends": 0,
+                "newHope": 93,
+                "redeemed": 40,
+                "released": 13
+            },
+            "totals": {
+                "adoptions": 188,
+                "bestFriends": 6,
+                "newHope": 128,
+                "redeemed": 48,
+                "released": 62
+            }
+        },
+        "nonLiveOutcomes": {
+            "cats": {
+                "diedInCare": 0,
+                "euthanasia": 9,
+                "missing": 0
+            },
+            "kittens": {
+                "diedInCare": 0,
+                "euthanasia": 0,
+                "missing": 0
+            },
+            "dogs": {
+                "diedInCare": 1,
+                "euthanasia": 22,
+                "missing": 0
+            },
+            "totals": {
+                "euthanasia": 31,
+                "diedInCare": 1,
+                "missing": 0
+            }
+        }
+    }
 ]

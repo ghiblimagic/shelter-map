@@ -1,4 +1,15 @@
-﻿using System.Text;
+﻿using Esri.ArcGISRuntime.Geometry;
+using Esri.ArcGISRuntime.Mapping;
+using Esri.ArcGISRuntime.Rasters;
+using Esri.ArcGISRuntime.Symbology;
+using Esri.ArcGISRuntime.Tasks.Geocoding;
+using Esri.ArcGISRuntime.UI;
+using Esri.ArcGISRuntime.UI.Controls;
+using System.Buffers.Text;
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -8,19 +19,16 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Esri.ArcGISRuntime.Mapping;
-using Esri.ArcGISRuntime.UI.Controls;
-using Esri.ArcGISRuntime.Geometry;
-using System.IO;
-using System.Text.Json;
-using Esri.ArcGISRuntime.Tasks.Geocoding;
-using Esri.ArcGISRuntime.Symbology;
-using Esri.ArcGISRuntime.UI;
+using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace shelter_map
 {
     public partial class MainWindow : Window
     {
+        private List<Shelter> _shelters = new List<Shelter>();
+        private Shelter? _selectedShelter = null;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -28,8 +36,6 @@ namespace shelter_map
             _ = GeocodeAndPlotShelters();
 
         }
-
-        private List<Shelter> _shelters = new List<Shelter>();
 
         private void InitializeMap()
         {
@@ -43,7 +49,11 @@ namespace shelter_map
                 SpatialReferences.Wgs84);
 
             MyMapView.SetViewpoint(new Viewpoint(losAngelesCounty));
+
+            MyMapView.ViewpointChanged += (s, e) => RedrawPieCharts();
+            MyMapView.SizeChanged += (s, e) => RedrawPieCharts();
         }
+
 
         private List<Shelter> LoadShelters()
         {
@@ -54,6 +64,129 @@ namespace shelter_map
             };
             return JsonSerializer.Deserialize<List<Shelter>>(json, options);
         }
+
+        private async Task GeocodeAndPlotShelters()
+        {
+            try
+            {
+                _shelters = LoadShelters();
+                var locator = await LocatorTask.CreateAsync(
+                    new Uri("https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer"));
+
+                var graphicsOverlay = new GraphicsOverlay();
+                MyMapView.GraphicsOverlays.Add(graphicsOverlay);
+
+                foreach (var shelter in _shelters)
+                {
+                    var geocodeParams = new GeocodeParameters { MaxResults = 1 };
+                    var results = await locator.GeocodeAsync(shelter.Address, geocodeParams);
+                    if (results.Count == 0) continue;
+
+                    shelter.Latitude = results[0].DisplayLocation.Y;
+                    shelter.Longitude = results[0].DisplayLocation.X;
+                }
+
+                // Zoom to shelter locations
+                var points = _shelters
+                    .Where(s => s.Latitude != 0 && s.Longitude != 0)
+                    .Select(s => new MapPoint(s.Longitude, s.Latitude, SpatialReferences.Wgs84))
+                    .ToList();
+
+                if (points.Count > 0)
+                {
+                    var builder = new EnvelopeBuilder(SpatialReferences.Wgs84);
+                    foreach (var point in points)
+                        builder.UnionOf(point);
+
+                    // Expand just a little around the shelter points
+                    builder.Expand(1.3);
+                    MyMapView.SetViewpoint(new Viewpoint(builder.ToGeometry()));
+                }
+
+                DrawCircles();
+                UpdateLegend();
+                // have all panels start as closed, before the first shelter is selected
+
+                HideAllSidebarPanels();
+
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}");
+            }
+        }
+
+        public class AnimalBreakdown
+        {
+            public int Dogs { get; set; }
+            public int Cats { get; set; }
+            public int Kittens { get; set; }
+            public int Total => Dogs + Cats + Kittens;
+        }
+    
+
+        public class NonLiveBreakdown
+        {
+            public AnimalBreakdown Euthanasia { get; set; } = new();
+            public AnimalBreakdown Died { get; set; } = new();
+            public AnimalBreakdown Missing { get; set; } = new();
+        }
+
+        // stripes for cats
+        private Brush CreateStripeBrush(Color color)
+        {
+            return new DrawingBrush
+            {
+                TileMode = TileMode.Tile,
+                Viewport = new Rect(0, 0, 10, 20), // ⬅️ bigger tile = wider stripes
+                ViewportUnits = BrushMappingMode.Absolute,
+                Drawing = new GeometryDrawing(
+          null,
+          new Pen(new SolidColorBrush(color), 9),
+          new LineGeometry(new Point(0, 20), new Point(20, 0))
+      )
+            };
+        }
+
+        // kittens have dots
+        private Brush CreateDotBrush(Color color)
+        {
+            var geometry = new EllipseGeometry(new Point(5, 5), 2, 2);
+
+            return new DrawingBrush
+            {
+                TileMode = TileMode.Tile,
+                Viewport = new Rect(0, 0, 14, 14),
+                ViewportUnits = BrushMappingMode.Absolute,
+                Drawing = new GeometryDrawing(
+                  new SolidColorBrush(color),
+                  null,
+                  new EllipseGeometry(new Point(6, 6), 2.5, 2.5)
+        )
+            };
+        }
+
+
+        private System.Windows.Media.Brush GetNonLiveColor(string animal, string outcome)
+        {
+            Color baseColor = outcome switch
+            {
+                "euth" => Color.FromRgb(0, 90, 180),     // blue
+                "died" => Color.FromRgb(90, 0, 130),     // purple
+                "missing" => Color.FromRgb(200, 160, 0), // yellow
+                _ => Colors.Gray
+            };
+
+            return animal switch
+            {
+                "dogs" => new SolidColorBrush(baseColor),
+                "cats" => CreateStripeBrush(baseColor),
+                "kittens" => CreateDotBrush(baseColor),
+                _ => new SolidColorBrush(baseColor)
+            };
+        }
+
 
         private void DrawCircles()
         {
@@ -108,7 +241,7 @@ namespace shelter_map
 
                 // Save rate label
                 var textSymbol = new TextSymbol(
-                    $"{filteredSaveRate}%",
+                    $"Save Rate {filteredSaveRate}%",
                     System.Drawing.Color.Black,
                     12,
                     Esri.ArcGISRuntime.Symbology.HorizontalAlignment.Left,
@@ -131,58 +264,387 @@ namespace shelter_map
                 outerGraphic.Attributes["kittens"] = shelter.Kittens;
                 outerGraphic.Attributes["total"] = total;
                 outerGraphic.Attributes["saveRate"] = shelter.SaveRate;
+                outerGraphic.Attributes["NonLiveRate"] = shelter.NonLiveRate;
 
                 graphicsOverlay.Graphics.Add(outerGraphic);
                 graphicsOverlay.Graphics.Add(innerGraphic);
             }
         }
 
-        private async Task GeocodeAndPlotShelters()
+        private Point MapPointToScreen(MapPoint mapPoint)
         {
-            try
+            var screenPoint = MyMapView.LocationToScreen(mapPoint);
+            return new Point(screenPoint.X, screenPoint.Y);
+        }
+
+        private void DrawPieChart(Point center, double radius, List<(double value, System.Windows.Media.Brush color)> segments)
+        {
+            if (segments.Sum(s => s.value) == 0) return;
+
+            var nonZero = segments.Where(s => s.value > 0).ToList();
+
+            // If only one segment, draw a full circle
+
+            // problem when there was only one segment:
+
+            // When you draw an arc in WPF, you define a start point and an end point on the circle's edge.
+            // If there's only one segment, it takes up 100% of the pie —  meaning the start point and end point are the same point. 
+
+            //  WPF's ArcSegment can't draw an arc from a point back to itself,
+            //  so it just draws a straight line between the same point, giving you the line you were seeing.
+
+            // Why a full circle needs different treatment:
+            // This is actually a well known limitation of arc - based drawing systems — not just WPF.
+            //  SVG has the same problem. A full circle can't be represented as a single arc, so you have to handle it as a special case entirely.
+
+            if (nonZero.Count == 1)
             {
-                _shelters = LoadShelters();
-                var locator = await LocatorTask.CreateAsync(
-                    new Uri("https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer"));
 
-                var graphicsOverlay = new GraphicsOverlay();
-                MyMapView.GraphicsOverlays.Add(graphicsOverlay);
-
-                foreach (var shelter in _shelters)
+                // Instead of trying to draw a 360 degree arc (which fails), it switches to a completely different WPF shape — Ellipse.
+                // An Ellipse knows how to draw itself as a full circle natively without needing arc math.
+                var ellipse = new System.Windows.Shapes.Ellipse
                 {
-                    var geocodeParams = new GeocodeParameters { MaxResults = 1 };
-                    var results = await locator.GeocodeAsync(shelter.Address, geocodeParams);
-                    if (results.Count == 0) continue;
+                    Width = radius * 2,
+                    Height = radius * 2,
+                    Fill = nonZero[0].color,
+                    Stroke = System.Windows.Media.Brushes.Black,
+                    StrokeThickness = 1.5
+                };
 
-                    shelter.Latitude = results[0].DisplayLocation.Y;
-                    shelter.Longitude = results[0].DisplayLocation.X;
-                }
+                // The Canvas.SetLeft and Canvas.SetTop lines position the ellipse correctly.
+                // This is important because WPF positions shapes by their top-left corner, not their center —
+                // so we subtract the radius from both X and Y to shift it so the center of the ellipse lands exactly where we want it.
+                Canvas.SetLeft(ellipse, center.X - radius);
+                Canvas.SetTop(ellipse, center.Y - radius);
+                PieChartCanvas.Children.Add(ellipse);
 
-                // Zoom to shelter locations
-                var points = _shelters
-                    .Where(s => s.Latitude != 0 && s.Longitude != 0)
-                    .Select(s => new MapPoint(s.Longitude, s.Latitude, SpatialReferences.Wgs84))
-                    .ToList();
+                // Then return exits the method early so the regular arc drawing code below never runs.
+                return;
 
-                if (points.Count > 0)
-                {
-                    var builder = new EnvelopeBuilder(SpatialReferences.Wgs84);
-                    foreach (var point in points)
-                        builder.UnionOf(point);
-
-                    // Expand just a little around the shelter points
-                    builder.Expand(1.3);
-                    MyMapView.SetViewpoint(new Viewpoint(builder.ToGeometry()));
-                }
-
-                DrawCircles();
+                // The key insight:
+                // The fix doesn't try to make the arc work for a full circle —
+                // it recognizes that a full circle is fundamentally a different shape that needs a different drawing approach,
+                // and switches tools accordingly. That's a common pattern in graphics programming —
+                // recognize the edge case and handle it separately rather than trying to force one approach to handle everything.
             }
-            catch (Exception ex)
+
+            double total = segments.Sum(s => s.value);
+            double startAngle = -Math.PI / 2;
+
+            foreach (var (value, color) in segments)
             {
-                MessageBox.Show($"Error: {ex.Message}");
+                if (value == 0) continue;
+                double sweepAngle = (value / total) * 2 * Math.PI;
+
+                var path = new System.Windows.Shapes.Path();
+                var figure = new PathFigure();
+                figure.StartPoint = center;
+
+                var startX = center.X + radius * Math.Cos(startAngle);
+                var startY = center.Y + radius * Math.Sin(startAngle);
+                var endAngle = startAngle + sweepAngle;
+                var endX = center.X + radius * Math.Cos(endAngle);
+                var endY = center.Y + radius * Math.Sin(endAngle);
+
+                figure.Segments.Add(new System.Windows.Media.LineSegment(new Point(startX, startY), true));
+                figure.Segments.Add(new ArcSegment(
+                    new Point(endX, endY),
+                    new System.Windows.Size(radius, radius),
+                    0,
+                    sweepAngle > Math.PI,
+                    SweepDirection.Clockwise,
+                    true));
+                figure.Segments.Add(new System.Windows.Media.LineSegment(center, true));
+                figure.IsClosed = true;
+
+                var geometry = new PathGeometry();
+                geometry.Figures.Add(figure);
+                path.Data = geometry;
+                path.Fill = color;
+                path.Stroke = System.Windows.Media.Brushes.Black;
+                path.StrokeThickness = 1.5;
+
+                PieChartCanvas.Children.Add(path);
+                startAngle = endAngle;
             }
         }
 
+        private void RedrawPieCharts()
+        {
+            PieChartCanvas.Children.Clear();
+
+            if (_shelters == null || MyMapView.GraphicsOverlays.Count == 0) return;
+
+            bool isLive = ModeLive.IsChecked == true;
+            bool isNonLive = ModeNonLive.IsChecked == true;
+
+            if (!isLive && !isNonLive) return;
+
+            foreach (var shelter in _shelters)
+            {
+                if (shelter.Latitude == 0 && shelter.Longitude == 0) continue;
+
+                var mapPoint = new MapPoint(shelter.Longitude, shelter.Latitude, SpatialReferences.Wgs84);
+                var screen = MapPointToScreen(mapPoint);
+
+                if (screen.X < 0 || screen.Y < 0 ||
+                    screen.X > MyMapView.ActualWidth ||
+                    screen.Y > MyMapView.ActualHeight) continue;
+
+                double radius = 20 + (shelter.Total / 25.0);
+
+                List<(double, System.Windows.Media.Brush)> segments;
+
+                if (isLive)
+                {
+                    var (adoptions, bestFriends, newHope, redeemed, released) = GetFilteredLive(shelter);
+
+                    segments = new List<(double, Brush)>
+            {
+                (adoptions, Brushes.MediumSeaGreen),
+                (bestFriends, Brushes.DodgerBlue),
+                (newHope, Brushes.MediumPurple),
+                (redeemed, Brushes.Orange),
+                (released, Brushes.SteelBlue)
+            };
+                }
+                else
+                {
+                    var data = GetFilteredNonLive(shelter);
+
+                    segments = new List<(double, Brush)>
+{
+    (data.Euthanasia.Dogs, GetNonLiveColor("dogs", "euth")),
+    (data.Euthanasia.Cats, GetNonLiveColor("cats", "euth")),
+    (data.Euthanasia.Kittens, GetNonLiveColor("kittens", "euth")),
+
+    (data.Died.Dogs, GetNonLiveColor("dogs", "died")),
+    (data.Died.Cats, GetNonLiveColor("cats", "died")),
+    (data.Died.Kittens, GetNonLiveColor("kittens", "died")),
+
+    (data.Missing.Dogs, GetNonLiveColor("dogs", "missing")),
+    (data.Missing.Cats, GetNonLiveColor("cats", "missing")),
+    (data.Missing.Kittens, GetNonLiveColor("kittens", "missing"))
+};
+                }
+
+                DrawPieChart(screen, radius, segments);
+            }
+        }
+
+
+        private void HideAllSidebarPanels()
+        {
+            SaveRatePanel.Visibility = Visibility.Collapsed;
+            LiveOutcomesPanel.Visibility = Visibility.Collapsed;
+            NonLiveOutcomesPanel.Visibility = Visibility.Collapsed;
+            AnimalCountsPanel.Visibility = Visibility.Collapsed;
+            FosterPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private (bool dogs, bool cats, bool kittens) GetAnimalFilter()
+        {
+            return (
+                DogsToggle.IsChecked == true,
+                CatsToggle.IsChecked == true,
+                KittensToggle.IsChecked == true
+            );
+        }
+
+
+        private NonLiveBreakdown GetFilteredNonLive(Shelter s)
+        {
+            var (dogs, cats, kittens) = GetAnimalFilter();
+
+            var result = new NonLiveBreakdown();
+
+            if (dogs)
+            {
+                result.Euthanasia.Dogs += s.NonLiveOutcomes.Dogs.Euthanasia;
+                result.Died.Dogs += s.NonLiveOutcomes.Dogs.DiedInCare;
+                result.Missing.Dogs += s.NonLiveOutcomes.Dogs.Missing;
+            }
+
+            if (cats)
+            {
+                result.Euthanasia.Cats += s.NonLiveOutcomes.Cats.Euthanasia;
+                result.Died.Cats += s.NonLiveOutcomes.Cats.DiedInCare;
+                result.Missing.Cats += s.NonLiveOutcomes.Cats.Missing;
+            }
+
+            if (kittens)
+            {
+                result.Euthanasia.Kittens += s.NonLiveOutcomes.Kittens.Euthanasia;
+                result.Died.Kittens += s.NonLiveOutcomes.Kittens.DiedInCare;
+                result.Missing.Kittens += s.NonLiveOutcomes.Kittens.Missing;
+            }
+
+            return result;
+        }
+
+
+        private (int adopt, int best, int hope, int redeem, int release) GetFilteredLive(Shelter s)
+        {
+            var (dogs, cats, kittens) = GetAnimalFilter();
+
+            int adopt = 0, best = 0, hope = 0, redeem = 0, release = 0;
+
+            if (dogs)
+            {
+                adopt += s.LiveOutcomes.Dogs.Adoptions;
+                best += s.LiveOutcomes.Dogs.BestFriends;
+                hope += s.LiveOutcomes.Dogs.NewHope;
+                redeem += s.LiveOutcomes.Dogs.Redeemed;
+                release += s.LiveOutcomes.Dogs.Released;
+            }
+
+            if (cats)
+            {
+                adopt += s.LiveOutcomes.Cats.Adoptions;
+                best += s.LiveOutcomes.Cats.BestFriends;
+                hope += s.LiveOutcomes.Cats.NewHope;
+                redeem += s.LiveOutcomes.Cats.Redeemed;
+                release += s.LiveOutcomes.Cats.Released;
+            }
+
+            if (kittens)
+            {
+                adopt += s.LiveOutcomes.Kittens.Adoptions;
+                best += s.LiveOutcomes.Kittens.BestFriends;
+                hope += s.LiveOutcomes.Kittens.NewHope;
+                redeem += s.LiveOutcomes.Kittens.Redeemed;
+                release += s.LiveOutcomes.Kittens.Released;
+            }
+
+            return (adopt, best, hope, redeem, release);
+        }
+
+        private int GetFilteredIntakeTotal(Shelter s)
+        {
+            var (dogs, cats, kittens) = GetAnimalFilter();
+
+            int total = 0;
+
+            if (dogs)
+                total += s.Dogs;
+
+            if (cats)
+                total += s.Cats;
+
+            if (kittens)
+                total += s.Kittens;
+
+            return total;
+        }
+
+        public static string GetPercentage(int value, int total, int decimals = 2)
+        {
+            if (total <= 0)
+                // edge case, so we don't divide over 0
+                return "0%";
+
+            double percent = (double)value / total * 100;
+            return $"{Math.Round(percent, decimals)}%";
+            // decided against percentage.ToString("P") because
+            // 1. don't need localization of numbers
+            // 2. can better control the rounding behavior
+        }
+
+
+        private void RefreshSidebar(Shelter shelter)
+        {
+            HideAllSidebarPanels();
+
+            if (ModeIntake.IsChecked == true)
+            { 
+            AnimalCountsPanel.Visibility = Visibility.Visible;
+
+            ShelterName.Text = shelter.Name;
+            ShelterAddress.Text = shelter.Address;
+            DogCount.Text = $"🐕 Dogs: {shelter.Dogs}";
+            CatCount.Text = $"🐈 Cats: {shelter.Cats}";
+            KittenCount.Text = $"🐱 Kittens: {shelter.Kittens}";
+            TotalCount.Text = $"Total: {shelter.Total}";
+
+            SaveRatePanel.Visibility = Visibility.Visible;
+
+            // var (dogs, cats, kittens) = GetAnimalFilter();
+
+            //SaveRate.Text = $"Save Rate (filtered): {filteredSaveRate}%";
+
+            DogSaveRate.Text = shelter.Dogs > 0 ?
+                    $"🐕 Dog Save Rate: {Math.Round((double) shelter.DogsSaved / shelter.Dogs * 100, 1)}%" : "";
+            CatSaveRate.Text = shelter.Cats > 0 ?
+                    $"🐈 Cat Save Rate: {Math.Round((double) shelter.CatsSaved / shelter.Cats * 100, 1)}%" : "";
+            KittenSaveRate.Text = shelter.Kittens > 0 ?
+                    $"🐱 Kitten Save Rate: {Math.Round((double) shelter.KittensSaved / shelter.Kittens * 100, 1)}%" : "";
+
+            }
+
+
+
+            else if (ModeLive.IsChecked == true)
+            {
+          
+                LiveOutcomesPanel.Visibility = Visibility.Visible;
+
+                var (adoptions, bestFriends, newHope, redeemed, released) = GetFilteredLive(shelter);
+
+                var totalLive = adoptions + bestFriends + newHope + redeemed + released;
+
+                var totalIntake = GetFilteredIntakeTotal(shelter);
+
+                Adoptions.Text = $"Adoptions: {adoptions},  {GetPercentage(adoptions,totalLive)}";
+                BestFriends.Text = $"Best Friends: {bestFriends}, {GetPercentage(bestFriends, totalLive)}";
+                NewHope.Text = $"New Hope: {newHope}, {GetPercentage(newHope, totalLive)}";
+                Redeemed.Text = $"Redeemed: {redeemed}, {GetPercentage(redeemed, totalLive)}";
+                Released.Text = $"Released: {released}, {GetPercentage(released, totalLive)}";
+                                            
+
+                LiveRate.Text = $"Total Live: {totalLive}";
+                SaveRate.Text = $"Save Rate: {GetPercentage(totalLive, totalIntake)}";
+            }
+            else if (ModeNonLive.IsChecked == true)
+            {
+                NonLiveOutcomesPanel.Visibility = Visibility.Visible;
+
+                var data = GetFilteredNonLive(shelter);
+
+                var euthanasia = data.Euthanasia.Total;
+                var died = data.Died.Total;
+                var missing = data.Missing.Total;
+
+                var totalIntake = GetFilteredIntakeTotal(shelter);
+
+                var notSavedTotal = euthanasia + died + missing;
+
+                var (dogs, cats, kittens) = GetAnimalFilter();
+
+                var selectedAnimals = new List<string>();
+
+                if (dogs) selectedAnimals.Add("Dogs");
+                if (cats) selectedAnimals.Add("Cats");
+                if (kittens) selectedAnimals.Add("Kittens");
+
+                NonLiveOutcomesChoices.Text = selectedAnimals.Count > 0
+                        ? $"Non Live Outcomes for:\n{string.Join(", ", selectedAnimals)}"
+                        : "Non Live Outcomes (No animals selected)"; Euthanasia.Text = $"Euthanasia: {euthanasia}";
+
+                Died.Text = $"Died in Care: {died}";
+                MissingAnimals.Text = $"Missing: {missing}";
+
+                NotSavedTotal.Text = $"Total Non-Live: {euthanasia + died + missing}";
+                NotSavedRate.Text = $"Not Saved Rate: {GetPercentage(notSavedTotal, totalIntake)}";
+            }
+          
+
+
+            // fosters
+
+            //DogFostered.Text = "🐕 Dogs Fostered";
+            //CatFostered.Text = "🐈 Cats Fostered";
+            //KittenFostered.Text = "🐱 Kittens Fostered";
+        }
 
         private void MyMapView_GeoViewTapped(object sender, Esri.ArcGISRuntime.UI.Controls.GeoViewInputEventArgs e)
         {
@@ -204,39 +666,163 @@ namespace shelter_map
             var shelter = _shelters.FirstOrDefault(s => s.Name == result.Attributes["name"]?.ToString());
             if (shelter == null) return;
 
-            bool showDogs = DogsToggle.IsChecked == true;
-            bool showCats = CatsToggle.IsChecked == true;
-            bool showKittens = KittensToggle.IsChecked == true;
 
-            int total = 0;
-            int saved = 0;
-            if (showDogs) { total += shelter.Dogs; saved += shelter.DogsSaved; }
-            if (showCats) { total += shelter.Cats; saved += shelter.CatsSaved; }
-            if (showKittens) { total += shelter.Kittens; saved += shelter.KittensSaved; }
 
-            double filteredSaveRate = total > 0 ? Math.Round((double)saved / total * 100, 1) : 0;
+            _selectedShelter = shelter;
+            RefreshSidebar(shelter);
 
-            ShelterName.Text = shelter.Name;
-            ShelterAddress.Text = shelter.Address;
-            DogCount.Text = showDogs ? $"🐕 Dogs: {shelter.Dogs} (saved: {shelter.DogsSaved})" : "";
-            CatCount.Text = showCats ? $"🐈 Cats: {shelter.Cats} (saved: {shelter.CatsSaved})" : "";
-            KittenCount.Text = showKittens ? $"🐱 Kittens: {shelter.Kittens} (saved: {shelter.KittensSaved})" : "";
-            TotalCount.Text = $"Total: {total} (saved: {saved})";
-            SaveRate.Text = $"Save Rate Total: {filteredSaveRate}%";
-            DogSaveRate.Text = shelter.Dogs > 0 ?
-                $"🐕 Dog Save Rate: {Math.Round((double)shelter.DogsSaved / shelter.Dogs * 100, 1)}%" : "";
-            CatSaveRate.Text = shelter.Cats > 0 ?
-                $"🐈 Cat Save Rate: {Math.Round((double)shelter.CatsSaved / shelter.Cats * 100, 1)}%" : "";
-            KittenSaveRate.Text = shelter.Kittens > 0 ?
-                $"🐱 Kitten Save Rate: {Math.Round((double)shelter.KittensSaved / shelter.Kittens * 100, 1)}%" : "";
+
         }
+
+
+
+
+
+        private void Mode_Changed(object sender, RoutedEventArgs e)
+        {
+
+            if (MyMapView.GraphicsOverlays.Count == 0) return;
+
+            HideAllSidebarPanels();
+
+            // ALWAYS SHOW FILTERS
+            AnimalFilterPanel.Visibility = Visibility.Visible;
+            bool isIntake = ModeIntake.IsChecked == true;
+
+            if (isIntake)
+            {
+                MyMapView.GraphicsOverlays[0].IsVisible = true;
+                PieChartCanvas.Children.Clear();
+            }
+            else
+            {
+                MyMapView.GraphicsOverlays[0].IsVisible = false;
+                RedrawPieCharts();
+            }
+
+            UpdateLegend();
+
+            if (_selectedShelter != null)
+                RefreshSidebar(_selectedShelter);
+        }
+
+
+
+
+
 
         private void AnimalToggle_Changed(object sender, RoutedEventArgs e)
         {
             if (MyMapView.GraphicsOverlays.Count > 0)
                 DrawCircles();
+
+            RedrawPieCharts();
+
+
+            if (_selectedShelter != null)
+                RefreshSidebar(_selectedShelter);
         }
 
 
+
+
+
+        private void AddLegendSubItem(string label, Brush color)
+        {
+            var panel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Margin = new Thickness(20, 2, 0, 2) // indent
+            };
+
+            var rect = new System.Windows.Shapes.Rectangle
+            {
+                Width = 12,
+                Height = 12,
+                Fill = color,
+                Margin = new Thickness(0, 0, 6, 0)
+            };
+
+            var text = new TextBlock
+            {
+                Text = label,
+                FontSize = 11,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            };
+
+            panel.Children.Add(rect);
+            panel.Children.Add(text);
+            LegendPanel.Children.Add(panel);
+        }
+
+
+        private void UpdateLegend()
+        {
+            LegendPanel.Children.Clear();
+
+            if (ModeIntake.IsChecked == true)
+            {
+                LegendHeader.Text = "Legend";
+                AddLegendItem("Total Intake", System.Windows.Media.Brushes.Red);
+                AddLegendItem("Animals Saved", System.Windows.Media.Brushes.LimeGreen);
+            }
+            else if (ModeLive.IsChecked == true)
+            {
+                LegendHeader.Text = "Live Outcomes";
+                AddLegendItem("Adoptions", System.Windows.Media.Brushes.MediumSeaGreen);
+                AddLegendItem("Best Friends", System.Windows.Media.Brushes.DodgerBlue);
+                AddLegendItem("New Hope", System.Windows.Media.Brushes.MediumPurple);
+                AddLegendItem("Redeemed", System.Windows.Media.Brushes.Orange);
+                AddLegendItem("Released", System.Windows.Media.Brushes.SteelBlue);
+            }
+            else if (ModeNonLive.IsChecked == true)
+            {
+                LegendHeader.Text = "Non-Live Outcomes";
+                LegendPanel.Children.Clear();
+
+                // Euthanasia
+                AddLegendItem("Euthanasia", Brushes.Red);
+                AddLegendSubItem("Dogs", GetNonLiveColor("dogs", "euth"));
+                AddLegendSubItem("Cats", GetNonLiveColor("cats", "euth"));
+                AddLegendSubItem("Kittens", GetNonLiveColor("kittens", "euth"));
+
+                // Died
+                AddLegendItem("Died in Care", Brushes.Orange);
+                AddLegendSubItem("Dogs", GetNonLiveColor("dogs", "died"));
+                AddLegendSubItem("Cats", GetNonLiveColor("cats", "died"));
+                AddLegendSubItem("Kittens", GetNonLiveColor("kittens", "died"));
+
+                // Missing
+                AddLegendItem("Missing", Brushes.Black);
+                AddLegendSubItem("Dogs", GetNonLiveColor("dogs", "missing"));
+                AddLegendSubItem("Cats", GetNonLiveColor("cats", "missing"));
+                AddLegendSubItem("Kittens", GetNonLiveColor("kittens", "missing"));
+            }
+        }
+        
+
+        private void AddLegendItem(string label, System.Windows.Media.Brush color)
+        {
+            var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 2) };
+
+            var rect = new System.Windows.Shapes.Rectangle
+            {
+                Width = 16,
+                Height = 16,
+                Fill = color,
+                Margin = new Thickness(0, 0, 8, 0)
+            };
+
+            var text = new TextBlock
+            {
+                Text = label,
+                FontSize = 12,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            };
+
+            panel.Children.Add(rect);
+            panel.Children.Add(text);
+            LegendPanel.Children.Add(panel);
+        }
     }
 }
