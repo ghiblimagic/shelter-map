@@ -566,6 +566,7 @@ namespace shelter_map
             NonLiveOutcomesPanel.Visibility = Visibility.Collapsed;
             AnimalCountsPanel.Visibility = Visibility.Collapsed;
             FosterPanel.Visibility = Visibility.Collapsed;
+            OutcomeFilterPanel.Visibility = Visibility.Collapsed;
         }
 
         private (bool dogs, bool cats, bool kittens) GetAnimalFilter()
@@ -577,37 +578,55 @@ namespace shelter_map
             );
         }
 
+        private (bool euthanasia, bool died, bool missing) GetOutcomeFilter()
+        {
+            return (
+                EuthanasiaToggle.IsChecked == true,
+                DiedToggle.IsChecked == true,
+                MissingToggle.IsChecked == true
+            );
+        }
+
 
         private NonLiveBreakdown GetFilteredNonLive(Shelter s)
         {
             var (dogs, cats, kittens) = GetAnimalFilter();
+            var (euth, died, missing) = GetOutcomeFilter();
 
             var result = new NonLiveBreakdown();
 
             if (dogs)
             {
-                result.Euthanasia.Dogs += s.NonLiveOutcomes.Dogs.Euthanasia;
-                result.Died.Dogs += s.NonLiveOutcomes.Dogs.DiedInCare;
-                result.Missing.Dogs += s.NonLiveOutcomes.Dogs.Missing;
+                if (euth) result.Euthanasia.Dogs += s.NonLiveOutcomes.Dogs.Euthanasia;
+                if (died) result.Died.Dogs += s.NonLiveOutcomes.Dogs.DiedInCare;
+                if (missing) result.Missing.Dogs += s.NonLiveOutcomes.Dogs.Missing;
             }
 
             if (cats)
             {
-                result.Euthanasia.Cats += s.NonLiveOutcomes.Cats.Euthanasia;
-                result.Died.Cats += s.NonLiveOutcomes.Cats.DiedInCare;
-                result.Missing.Cats += s.NonLiveOutcomes.Cats.Missing;
+                if (euth) result.Euthanasia.Cats += s.NonLiveOutcomes.Cats.Euthanasia;
+                if (died) result.Died.Cats += s.NonLiveOutcomes.Cats.DiedInCare;
+                if (missing) result.Missing.Cats += s.NonLiveOutcomes.Cats.Missing;
             }
 
             if (kittens)
             {
-                result.Euthanasia.Kittens += s.NonLiveOutcomes.Kittens.Euthanasia;
-                result.Died.Kittens += s.NonLiveOutcomes.Kittens.DiedInCare;
-                result.Missing.Kittens += s.NonLiveOutcomes.Kittens.Missing;
+                if (euth) result.Euthanasia.Kittens += s.NonLiveOutcomes.Kittens.Euthanasia;
+                if (died) result.Died.Kittens += s.NonLiveOutcomes.Kittens.DiedInCare;
+                if (missing) result.Missing.Kittens += s.NonLiveOutcomes.Kittens.Missing;
             }
 
             return result;
         }
 
+        private void OutcomeFilter_Changed(object sender, RoutedEventArgs e)
+        {
+            // redraw non-live pies and update legend/sidebar
+            // will be called in MainWindow.xaml when any of the euthanasia/died/missing toggles are changed
+            RedrawPieCharts();
+            UpdateLegend();
+            if (_selectedShelter != null) RefreshSidebar(_selectedShelter);
+        }
 
         private (int adopt, int best, int hope, int redeem, int release) GetFilteredLive(Shelter s)
         {
@@ -681,12 +700,21 @@ namespace shelter_map
         {
             HideAllSidebarPanels();
 
+            // Always keep the animal filter visible when updating the sidebar
+            AnimalFilterPanel.Visibility = Visibility.Visible;
+
+            // Show basic identity info for the selected shelter regardless of current mode
+            ShelterName.Text = shelter.Name;
+            ShelterAddress.Text = shelter.Address;
+
+            // Ensure the outcome filter stays visible when Non-Live mode is active
+            OutcomeFilterPanel.Visibility = ModeNonLive.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+
             if (ModeIntake.IsChecked == true)
             { 
             AnimalCountsPanel.Visibility = Visibility.Visible;
 
-            ShelterName.Text = shelter.Name;
-            ShelterAddress.Text = shelter.Address;
+         
             DogCount.Text = $"🐕 Dogs: {shelter.Dogs}";
             CatCount.Text = $"🐈 Cats: {shelter.Cats}";
             KittenCount.Text = $"🐱 Kittens: {shelter.Kittens}";
@@ -732,6 +760,7 @@ namespace shelter_map
             }
             else if (ModeNonLive.IsChecked == true)
             {
+                // Outcome filter already set above; show non-live panel
                 NonLiveOutcomesPanel.Visibility = Visibility.Visible;
 
                 var data = GetFilteredNonLive(shelter);
@@ -774,6 +803,8 @@ namespace shelter_map
 
         private void MyMapView_GeoViewTapped(object sender, Esri.ArcGISRuntime.UI.Controls.GeoViewInputEventArgs e)
         {
+            if (MyMapView.GraphicsOverlays.Count == 0) return;
+
             var tapLocation = GeometryEngine.Project(e.Location, SpatialReferences.Wgs84);
 
             var result = MyMapView.GraphicsOverlays[0]
@@ -811,9 +842,13 @@ namespace shelter_map
 
             HideAllSidebarPanels();
 
-            // ALWAYS SHOW FILTERS
+            // ALWAYS SHOW ANIMAL FILTER
             AnimalFilterPanel.Visibility = Visibility.Visible;
             bool isIntake = ModeIntake.IsChecked == true;
+            bool isNonLive = ModeNonLive.IsChecked == true;
+
+            // show outcome filter only for Non-Live mode
+            OutcomeFilterPanel.Visibility = isNonLive ? Visibility.Visible : Visibility.Collapsed;
 
             if (isIntake)
             {
@@ -827,6 +862,10 @@ namespace shelter_map
             }
 
             UpdateLegend();
+
+            // apply visuals immediately when switching to Non-Live
+            if (isNonLive)
+                OutcomeFilter_Changed(this, new RoutedEventArgs());
 
             if (_selectedShelter != null)
                 RefreshSidebar(_selectedShelter);

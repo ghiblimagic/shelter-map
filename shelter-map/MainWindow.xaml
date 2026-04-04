@@ -72,6 +72,17 @@
                                       Unchecked="AnimalToggle_Changed" />
                     </StackPanel>
                 </StackPanel>
+                <!-- Non Live Outcome Filter -->
+                <StackPanel x:Name="OutcomeFilterPanel">
+                    <TextBlock Text="Outcome Filter" FontWeight="Bold" Margin="0,6,0,2"/>
+                    <CheckBox x:Name="EuthanasiaToggle" Content="Euthanasia" IsChecked="True"
+       Checked="OutcomeFilter_Changed" Unchecked="OutcomeFilter_Changed"/>
+                    <CheckBox x:Name="DiedToggle" Content="Died in Care" IsChecked="True"
+        Checked="OutcomeFilter_Changed" Unchecked="OutcomeFilter_Changed"/>
+                    <CheckBox x:Name="MissingToggle" Content="Missing" IsChecked="True"
+        Checked="OutcomeFilter_Changed" Unchecked="OutcomeFilter_Changed"/>
+                </StackPanel>
+
 
                 <TextBlock Text="Click a shelter to see details"
                            FontSize="12"  FontWeight="Bold" Foreground="Black" Margin="0,0,0,10" />
@@ -124,6 +135,7 @@
 
                  </StackPanel>
 
+               
 
                 <!-- Foster  -->
 
