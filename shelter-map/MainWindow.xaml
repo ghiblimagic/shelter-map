@@ -1,153 +1,241 @@
-﻿<Window x:Class="shelter_map.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:shelter_map"
-        xmlns:esri="http://schemas.esri.com/arcgis/runtime/2013"
-        mc:Ignorable="d"
-        Title="LA Animal Services Shelter Map" Height="600" Width="1100">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="270" />
-        </Grid.ColumnDefinitions>
+﻿<Window
+  x:Class="shelter_map.MainWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:local="clr-namespace:shelter_map"
+  xmlns:esri="http://schemas.esri.com/arcgis/runtime/2013"
+  mc:Ignorable="d"
+  Title="LA Animal Services Shelter Map"
+  Height="600"
+  Width="1100"
+>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="270" />
+    </Grid.ColumnDefinitions>
 
-        <!-- Map + Canvas overlay -->
-        <Grid Grid.Column="0">
-            <esri:MapView x:Name="MyMapView" />
-            <Canvas x:Name="PieChartCanvas" IsHitTestVisible="False" />
+    <!-- Map + Canvas overlay -->
+    <Grid Grid.Column="0">
+      <esri:MapView x:Name="MyMapView" />
+      <Canvas x:Name="PieChartCanvas" IsHitTestVisible="False" />
 
-            <!-- Legend overlay top right -->
-            <Border x:Name="LegendOverlay" 
-            Background="#DDFFFFFF"
-            BorderBrush="#AAAAAA"
-            BorderThickness="1"
-            CornerRadius="4"
-            Padding="10"
-            Margin="10"
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top">
-                <StackPanel>
-                    <TextBlock x:Name="LegendHeader" FontWeight="Bold" Margin="0,0,0,5" />
-                    <StackPanel x:Name="LegendPanel" />
-                </StackPanel>
-            </Border>
-            
-        </Grid>
-
-        <!-- Sidebar -->
-        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Background="#F5F5F5" Margin="10">
-                <TextBlock Text="LA Animal Services" FontSize="16"
-                           FontWeight="Bold" Margin="0,10,0,5" />
-
-                <!-- Mode selector -->
-                <TextBlock Text="Display Mode:" FontWeight="Bold" Margin="0,10,0,5" />
-                <RadioButton x:Name="ModeIntake" Content="Intake vs Saved"
-                             IsChecked="True" Margin="0,2"
-                             Checked="Mode_Changed" />
-                <RadioButton x:Name="ModeLive" Content="Live Outcome Breakdown"
-                             Margin="0,2"
-                             Checked="Mode_Changed" />
-                <RadioButton x:Name="ModeNonLive" Content="Non-Live Outcome Breakdown"
-                             Margin="0,2"
-                             Checked="Mode_Changed" />
-
-                <!-- Animal filter -->
-                <StackPanel x:Name="AnimalFilterPanel" Margin="0,10,0,0">
-                    <TextBlock Text="Filter by animal type:" FontWeight="Bold" Margin="0,0,0,5" />
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                        <ToggleButton x:Name="DogsToggle" Content="🐕 Dogs"
-                                      IsChecked="True" Margin="0,0,5,0"
-                                      Checked="AnimalToggle_Changed"
-                                      Unchecked="AnimalToggle_Changed" />
-                        <ToggleButton x:Name="CatsToggle" Content="🐈 Cats"
-                                      IsChecked="True" Margin="0,0,5,0"
-                                      Checked="AnimalToggle_Changed"
-                                      Unchecked="AnimalToggle_Changed" />
-                        <ToggleButton x:Name="KittensToggle" Content="🐱 Kittens"
-                                      IsChecked="True"
-                                      Checked="AnimalToggle_Changed"
-                                      Unchecked="AnimalToggle_Changed" />
-                    </StackPanel>
-                </StackPanel>
-                <!-- Non Live Outcome Filter -->
-                <StackPanel x:Name="OutcomeFilterPanel">
-                    <TextBlock Text="Outcome Filter" FontWeight="Bold" Margin="0,6,0,2"/>
-                    <CheckBox x:Name="EuthanasiaToggle" Content="Euthanasia" IsChecked="True"
-       Checked="OutcomeFilter_Changed" Unchecked="OutcomeFilter_Changed"/>
-                    <CheckBox x:Name="DiedToggle" Content="Died in Care" IsChecked="True"
-        Checked="OutcomeFilter_Changed" Unchecked="OutcomeFilter_Changed"/>
-                    <CheckBox x:Name="MissingToggle" Content="Missing" IsChecked="True"
-        Checked="OutcomeFilter_Changed" Unchecked="OutcomeFilter_Changed"/>
-                </StackPanel>
-
-
-                <TextBlock Text="Click a shelter to see details"
-                           FontSize="12"  FontWeight="Bold" Foreground="Black" Margin="0,0,0,10" />
-
-                <TextBlock x:Name="ShelterName" FontSize="14"
-                           FontWeight="Bold" TextWrapping="Wrap" Margin="0,0,0,5" />
-                <TextBlock x:Name="ShelterAddress" FontSize="11"
-                           Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,15" />
-
-                <!-- Animal Counts -->
-                <StackPanel x:Name="AnimalCountsPanel">
-                    <TextBlock Text="Animal Counts" FontWeight="Bold" Margin="0,0,0,5" />
-                    <TextBlock x:Name="DogCount" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="CatCount" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="KittenCount" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="TotalCount" FontSize="12" FontWeight="Bold" Margin="0,5,0,15" />
-                </StackPanel>
-
-                <!-- Save Rates -->
-                <StackPanel x:Name="SaveRatePanel">
-                    <TextBlock Text="Save Rate" FontWeight="Bold" Margin="0,0,0,5" />
-                    <TextBlock x:Name="SaveRate" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="DogSaveRate" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="CatSaveRate" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="KittenSaveRate" FontSize="12" Margin="0,2" />
-                </StackPanel>
-
-                <!-- Live Outcomes -->
-                <StackPanel x:Name="LiveOutcomesPanel">
-                    <TextBlock Text="Live Outcomes" FontWeight="Bold" Margin="0,10,0,5" />
-                    <TextBlock x:Name="Adoptions" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="BestFriends" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="NewHope" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="Redeemed" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="Released" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="LiveRate" FontSize="12" FontWeight="Bold" Margin="0,5,0,15" />
-                </StackPanel>
-
-
-                <!-- Non-Live Outcomes -->
-                <StackPanel x:Name="NonLiveOutcomesPanel">
-                    <TextBlock x:Name="NonLiveOutcomesChoices" FontWeight="Bold" Margin="0,10,0,5" />
-                    <TextBlock x:Name="DogNonLiveRate" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="Euthanasia" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="Died" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="MissingAnimals" FontSize="12" Margin="0,2" />
-                                       
-                    <TextBlock x:Name="NotSavedTotal" FontSize="12" FontWeight="Bold" Margin="0,5,0,15" />
-                    <TextBlock x:Name="NotSavedRate" FontSize="12" FontWeight="Bold" Margin="0,5,0,15" />
-
-                 </StackPanel>
-
-               
-
-                <!-- Foster  -->
-
-                <StackPanel x:Name="FosterPanel">
-                    <TextBlock Text="Fostered" FontWeight="Bold" Margin="0,0,0,5" />
-                    <TextBlock x:Name="DogFostered" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="CatFostered" FontSize="12" Margin="0,2" />
-                    <TextBlock x:Name="KittenFostered" FontSize="12" Margin="0,2" />
-                </StackPanel>
-
-
-            </StackPanel>
-        </ScrollViewer>
+      <!-- Legend overlay top right -->
+      <Border
+        x:Name="LegendOverlay"
+        Background="#DDFFFFFF"
+        BorderBrush="#AAAAAA"
+        BorderThickness="1"
+        CornerRadius="4"
+        Padding="10"
+        Margin="10"
+        HorizontalAlignment="Right"
+        VerticalAlignment="Top"
+      >
+        <StackPanel>
+          <TextBlock x:Name="LegendHeader" FontWeight="Bold" Margin="0,0,0,5" />
+          <StackPanel x:Name="LegendPanel" />
+        </StackPanel>
+      </Border>
     </Grid>
+
+    <!-- Sidebar -->
+    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Background="#F5F5F5" Margin="10">
+        <TextBlock Text="LA Animal Services" FontSize="16" FontWeight="Bold" Margin="0,10,0,5" />
+
+        <!-- Mode selector -->
+        <TextBlock Text="Display Mode:" FontWeight="Bold" Margin="0,10,0,5" />
+        <RadioButton
+          x:Name="ModeIntake"
+          Content="Intake vs Saved"
+          IsChecked="True"
+          Margin="0,2"
+          Checked="Mode_Changed"
+        />
+        <RadioButton
+          x:Name="ModeLive"
+          Content="Live Outcome Breakdown"
+          Margin="0,2"
+          Checked="Mode_Changed"
+        />
+        <RadioButton
+          x:Name="ModeNonLive"
+          Content="Non-Live Outcome Breakdown"
+          Margin="0,2"
+          Checked="Mode_Changed"
+        />
+
+        <!-- Animal filter -->
+        <StackPanel x:Name="AnimalFilterPanel" Margin="0,10,0,0">
+          <TextBlock Text="Filter by animal type:" FontWeight="Bold" Margin="0,0,0,5" />
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+            <ToggleButton
+              x:Name="DogsToggle"
+              Content="🐕 Dogs"
+              IsChecked="True"
+              Margin="0,0,5,0"
+              Checked="AnimalToggle_Changed"
+              Unchecked="AnimalToggle_Changed"
+            />
+            <ToggleButton
+              x:Name="CatsToggle"
+              Content="🐈 Cats"
+              IsChecked="True"
+              Margin="0,0,5,0"
+              Checked="AnimalToggle_Changed"
+              Unchecked="AnimalToggle_Changed"
+            />
+            <ToggleButton
+              x:Name="KittensToggle"
+              Content="🐱 Kittens"
+              IsChecked="True"
+              Checked="AnimalToggle_Changed"
+              Unchecked="AnimalToggle_Changed"
+            />
+          </StackPanel>
+        </StackPanel>
+        <!-- Non Live Outcome Filter -->
+        <StackPanel x:Name="OutcomeFilterPanel">
+          <TextBlock Text="Outcome Filter" FontWeight="Bold" Margin="0,6,0,2" />
+          <CheckBox
+            x:Name="EuthanasiaToggle"
+            Content="Euthanasia"
+            IsChecked="True"
+            Checked="OutcomeFilter_Changed"
+            Unchecked="OutcomeFilter_Changed"
+          />
+          <CheckBox
+            x:Name="DiedToggle"
+            Content="Died in Care"
+            IsChecked="True"
+            Checked="OutcomeFilter_Changed"
+            Unchecked="OutcomeFilter_Changed"
+          />
+          <CheckBox
+            x:Name="MissingToggle"
+            Content="Missing"
+            IsChecked="True"
+            Checked="OutcomeFilter_Changed"
+            Unchecked="OutcomeFilter_Changed"
+          />
+        </StackPanel>
+
+        <!-- Live Outcome Filter (shows only in Live mode) -->
+        <StackPanel x:Name="LiveOutcomeFilterPanel" Visibility="Collapsed" Margin="0,6,0,0">
+          <TextBlock Text="Live Outcome Filter" FontWeight="Bold" Margin="0,0,0,2" />
+          <CheckBox
+            x:Name="AdoptionsToggle"
+            Content="Adoptions"
+            IsChecked="True"
+            Checked="LiveOutcomeFilter_Changed"
+            Unchecked="LiveOutcomeFilter_Changed"
+          />
+          <CheckBox
+            x:Name="BestFriendsToggle"
+            Content="Best Friends"
+            IsChecked="True"
+            Checked="LiveOutcomeFilter_Changed"
+            Unchecked="LiveOutcomeFilter_Changed"
+          />
+          <CheckBox
+            x:Name="NewHopeToggle"
+            Content="New Hope"
+            IsChecked="True"
+            Checked="LiveOutcomeFilter_Changed"
+            Unchecked="LiveOutcomeFilter_Changed"
+          />
+          <CheckBox
+            x:Name="RedeemedToggle"
+            Content="Redeemed"
+            IsChecked="True"
+            Checked="LiveOutcomeFilter_Changed"
+            Unchecked="LiveOutcomeFilter_Changed"
+          />
+          <CheckBox
+            x:Name="ReleasedToggle"
+            Content="Released"
+            IsChecked="True"
+            Checked="LiveOutcomeFilter_Changed"
+            Unchecked="LiveOutcomeFilter_Changed"
+          />
+        </StackPanel>
+
+        <TextBlock
+          Text="Click a shelter to see details"
+          FontSize="12"
+          FontWeight="Bold"
+          Foreground="Black"
+          Margin="0,0,0,10"
+        />
+
+        <TextBlock
+          x:Name="ShelterName"
+          FontSize="14"
+          FontWeight="Bold"
+          TextWrapping="Wrap"
+          Margin="0,0,0,5"
+        />
+        <TextBlock
+          x:Name="ShelterAddress"
+          FontSize="11"
+          Foreground="Gray"
+          TextWrapping="Wrap"
+          Margin="0,0,0,15"
+        />
+
+        <!-- Animal Counts -->
+        <StackPanel x:Name="AnimalCountsPanel">
+          <TextBlock Text="Animal Counts" FontWeight="Bold" Margin="0,0,0,5" />
+          <TextBlock x:Name="DogCount" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="CatCount" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="KittenCount" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="TotalCount" FontSize="12" FontWeight="Bold" Margin="0,5,0,15" />
+        </StackPanel>
+
+        <!-- Save Rates -->
+        <StackPanel x:Name="SaveRatePanel">
+          <TextBlock Text="Save Rate" FontWeight="Bold" Margin="0,0,0,5" />
+          <TextBlock x:Name="SaveRate" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="DogSaveRate" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="CatSaveRate" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="KittenSaveRate" FontSize="12" Margin="0,2" />
+        </StackPanel>
+
+        <!-- Live Outcomes -->
+        <StackPanel x:Name="LiveOutcomesPanel">
+          <TextBlock Text="Live Outcomes" FontWeight="Bold" Margin="0,10,0,5" />
+          <TextBlock x:Name="Adoptions" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="BestFriends" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="NewHope" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="Redeemed" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="Released" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="LiveRate" FontSize="12" FontWeight="Bold" Margin="0,5,0,15" />
+        </StackPanel>
+
+        <!-- Non-Live Outcomes -->
+        <StackPanel x:Name="NonLiveOutcomesPanel">
+          <TextBlock x:Name="NonLiveOutcomesChoices" FontWeight="Bold" Margin="0,10,0,5" />
+          <TextBlock x:Name="DogNonLiveRate" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="Euthanasia" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="Died" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="MissingAnimals" FontSize="12" Margin="0,2" />
+
+          <TextBlock x:Name="NotSavedTotal" FontSize="12" FontWeight="Bold" Margin="0,5,0,15" />
+          <TextBlock x:Name="NotSavedRate" FontSize="12" FontWeight="Bold" Margin="0,5,0,15" />
+        </StackPanel>
+
+        <!-- Foster  -->
+
+        <StackPanel x:Name="FosterPanel">
+          <TextBlock Text="Fostered" FontWeight="Bold" Margin="0,0,0,5" />
+          <TextBlock x:Name="DogFostered" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="CatFostered" FontSize="12" Margin="0,2" />
+          <TextBlock x:Name="KittenFostered" FontSize="12" Margin="0,2" />
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
 </Window>
