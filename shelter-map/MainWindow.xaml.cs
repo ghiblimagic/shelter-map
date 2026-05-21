@@ -206,9 +206,9 @@ namespace shelter_map
         {
             Color baseColor = outcome switch
             {
-                "euth" => Color.FromRgb(0, 90, 180), // blue
-                "died" => Color.FromRgb(90, 0, 130), // purple
-                "missing" => Color.FromRgb(200, 160, 0), // yellow
+                "euth" => (Color)Application.Current.Resources["EuthanasiaColor"],
+                "died" => (Color)Application.Current.Resources["DiedColor"],
+                "missing" => (Color)Application.Current.Resources["MissingColor"],
                 _ => Colors.Gray,
             };
 
@@ -577,7 +577,9 @@ namespace shelter_map
                 )
                     continue;
 
-                double radius = 20 + (shelter.Total / 25.0);
+                double baseRadius = (double)Application.Current.Resources["PieBaseRadius"];
+                double radiusDivisor = (double)Application.Current.Resources["PieRadiusPerAnimal"];
+                double radius = baseRadius + (shelter.Total / radiusDivisor);
 
                 List<(double, System.Windows.Media.Brush)> segments;
 
@@ -589,11 +591,11 @@ namespace shelter_map
 
                     segments = new List<(double, Brush)>
                     {
-                        (adoptions, Brushes.MediumSeaGreen),
-                        (bestFriends, Brushes.DodgerBlue),
-                        (newHope, Brushes.MediumPurple),
-                        (redeemed, Brushes.Orange),
-                        (released, Brushes.SteelBlue),
+                        (adoptions, (Brush)Application.Current.Resources["AdoptionBrush"]),
+                        (bestFriends, (Brush)Application.Current.Resources["BestFriendsBrush"]),
+                        (newHope, (Brush)Application.Current.Resources["NewHopeBrush"]),
+                        (redeemed, (Brush)Application.Current.Resources["RedeemedBrush"]),
+                        (released, (Brush)Application.Current.Resources["ReleasedBrush"]),
                     };
 
                     DrawPieChartWithLabels(screen, radius, segments);
@@ -1017,19 +1019,22 @@ namespace shelter_map
 
         private void AddLegendSubItem(string label, Brush color)
         {
+            var swatchSize = (double)Application.Current.Resources["LegendSubSwatchSize"];
+            var swatchMargin = (Thickness)Application.Current.Resources["LegendSubSwatchMargin"];
+            var rowMargin = (Thickness)Application.Current.Resources["LegendSubRowMargin"];
+
             var panel = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Margin = new Thickness(20, 2, 0, 2), // indent
+                Margin = rowMargin, // indent
             };
 
             var rect = new System.Windows.Shapes.Rectangle
             {
-                Width = 12,
-                Height = 12,
+                Width = swatchSize,
+                Height = swatchSize,
                 Fill = color,
-
-                Margin = new Thickness(0, 0, 6, 0),
+                Margin = swatchMargin,
             };
 
             var text = new TextBlock
@@ -1051,39 +1056,47 @@ namespace shelter_map
             if (ModeIntake.IsChecked == true)
             {
                 LegendHeader.Text = "Legend";
-                AddLegendItem("Total Intake", System.Windows.Media.Brushes.Red);
-                AddLegendItem("Animals Saved", System.Windows.Media.Brushes.LimeGreen);
+                AddLegendItem(
+                    "Total Intake",
+                    (Brush)Application.Current.Resources["TotalIntakeBrush"]
+                );
+                AddLegendItem(
+                    "Animals Saved",
+                    (Brush)Application.Current.Resources["AnimalsSavedBrush"]
+                );
             }
             else if (ModeLive.IsChecked == true)
             {
                 LegendHeader.Text = "Live Outcomes";
-                AddLegendItem("Adoptions", System.Windows.Media.Brushes.MediumSeaGreen);
-                AddLegendItem("Best Friends", System.Windows.Media.Brushes.DodgerBlue);
-                AddLegendItem("New Hope", System.Windows.Media.Brushes.MediumPurple);
-                AddLegendItem("Redeemed", System.Windows.Media.Brushes.Orange);
-                AddLegendItem("Released", System.Windows.Media.Brushes.SteelBlue);
+                AddLegendItem("Adoptions", (Brush)Application.Current.Resources["AdoptionBrush"]);
+                AddLegendItem(
+                    "Best Friends",
+                    (Brush)Application.Current.Resources["BestFriendsBrush"]
+                );
+                AddLegendItem("New Hope", (Brush)Application.Current.Resources["NewHopeBrush"]);
+                AddLegendItem("Redeemed", (Brush)Application.Current.Resources["RedeemedBrush"]);
+                AddLegendItem("Released", (Brush)Application.Current.Resources["ReleasedBrush"]);
             }
             else if (ModeNonLive.IsChecked == true)
             {
                 LegendHeader.Text = "Non-Live Outcomes";
-                LegendPanel.Children.Clear();
 
-                // Use the same base colors as GetNonLiveColor's Color.FromRgb(...) values
+                AddLegendItem(
+                    "Euthanasia",
+                    (Brush)Application.Current.Resources["EuthanasiaBrush"]
+                );
 
-                // Euthanasia
-                AddLegendItem("Euthanasia", new SolidColorBrush(Color.FromRgb(0, 90, 180)));
+                //  non-live sub-items still go through GetNonLiveColor() since those use the patterned brushes (zigzag/stripe) which can't be stored directly in a dictionary.
                 AddLegendSubItem("Dogs", GetNonLiveColor("dogs", "euth"));
                 AddLegendSubItem("Cats", GetNonLiveColor("cats", "euth"));
                 AddLegendSubItem("Kittens", GetNonLiveColor("kittens", "euth"));
 
-                // Died
-                AddLegendItem("Died in Care", new SolidColorBrush(Color.FromRgb(90, 0, 130)));
+                AddLegendItem("Died in Care", (Brush)Application.Current.Resources["DiedBrush"]);
                 AddLegendSubItem("Dogs", GetNonLiveColor("dogs", "died"));
                 AddLegendSubItem("Cats", GetNonLiveColor("cats", "died"));
                 AddLegendSubItem("Kittens", GetNonLiveColor("kittens", "died"));
 
-                // Missing
-                AddLegendItem("Missing", new SolidColorBrush(Color.FromRgb(200, 160, 0)));
+                AddLegendItem("Missing", (Brush)Application.Current.Resources["MissingBrush"]);
                 AddLegendSubItem("Dogs", GetNonLiveColor("dogs", "missing"));
                 AddLegendSubItem("Cats", GetNonLiveColor("cats", "missing"));
                 AddLegendSubItem("Kittens", GetNonLiveColor("kittens", "missing"));
@@ -1092,18 +1105,18 @@ namespace shelter_map
 
         private void AddLegendItem(string label, System.Windows.Media.Brush color)
         {
-            var panel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Margin = new Thickness(0, 2, 0, 2),
-            };
+            var swatchSize = (double)Application.Current.Resources["LegendSwatchSize"];
+            var swatchMargin = (Thickness)Application.Current.Resources["LegendSwatchMargin"];
+            var rowMargin = (Thickness)Application.Current.Resources["LegendRowMargin"];
+
+            var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = rowMargin };
 
             var rect = new System.Windows.Shapes.Rectangle
             {
-                Width = 16,
-                Height = 16,
+                Width = swatchSize,
+                Height = swatchSize,
                 Fill = color,
-                Margin = new Thickness(0, 0, 8, 0),
+                Margin = swatchMargin,
             };
 
             var text = new TextBlock

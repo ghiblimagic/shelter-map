@@ -1,0 +1,26 @@
+﻿<ResourceDictionary
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+>
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="Colors.xaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <SolidColorBrush x:Key="TotalIntakeBrush" Color="{StaticResource TotalIntakeColor}" />
+  <SolidColorBrush x:Key="AnimalsSavedBrush" Color="{StaticResource AnimalsSavedColor}" />
+
+  <!-- Outcome solid brushes (used in legend + pie fallback) -->
+  <SolidColorBrush x:Key="EuthanasiaBrush" Color="{StaticResource EuthanasiaColor}" />
+  <SolidColorBrush x:Key="DiedBrush" Color="{StaticResource DiedColor}" />
+  <SolidColorBrush x:Key="MissingBrush" Color="{StaticResource MissingColor}" />
+
+  <SolidColorBrush x:Key="AdoptionBrush" Color="{StaticResource AdoptionColor}" />
+  <SolidColorBrush x:Key="BestFriendsBrush" Color="{StaticResource BestFriendsColor}" />
+  <SolidColorBrush x:Key="NewHopeBrush" Color="{StaticResource NewHopeColor}" />
+  <SolidColorBrush x:Key="RedeemedBrush" Color="{StaticResource RedeemedColor}" />
+  <SolidColorBrush x:Key="ReleasedBrush" Color="{StaticResource ReleasedColor}" />
+
+  <!-- UI chrome brushes -->
+  <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource SidebarBackgroundColor}" />
+  <SolidColorBrush x:Key="LegendBorderBrush" Color="{StaticResource LegendBorderColor}" />
+</ResourceDictionary>

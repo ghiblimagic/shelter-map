@@ -1,0 +1,27 @@
+﻿<ResourceDictionary
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+>
+  <Color x:Key="TotalIntakeColor">#DC5050</Color>
+  <Color x:Key="AnimalsSavedColor">#32CD32</Color>
+
+  <!-- Outcome base colors -->
+  <Color x:Key="EuthanasiaColor">#005AB4</Color>
+  <!-- rgb(0,90,180) -->
+  <Color x:Key="DiedColor">#5A0082</Color>
+  <!-- rgb(90,0,130) -->
+  <Color x:Key="MissingColor">#C8A000</Color>
+  <!-- rgb(200,160,0) -->
+
+  <!-- Live outcome colors -->
+  <Color x:Key="AdoptionColor">#3CB371</Color>
+  <Color x:Key="BestFriendsColor">#1E90FF</Color>
+  <Color x:Key="NewHopeColor">#9370DB</Color>
+  <Color x:Key="RedeemedColor">#FFA500</Color>
+  <Color x:Key="ReleasedColor">#4682B4</Color>
+
+  <!-- UI chrome -->
+  <Color x:Key="SidebarBackgroundColor">#F5F5F5</Color>
+  <Color x:Key="LegendBackgroundColor">#DDFFFFFF</Color>
+  <Color x:Key="LegendBorderColor">#AAAAAA</Color>
+</ResourceDictionary>

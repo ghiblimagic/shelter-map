@@ -1,0 +1,39 @@
+﻿<ResourceDictionary
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+>
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="Brushes.xaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <Style x:Key="AnimalToggleButton" TargetType="ToggleButton">
+    <Setter Property="Margin" Value="0,0,5,0" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+
+  <Style x:Key="OutcomeCheckBox" TargetType="CheckBox">
+    <Setter Property="Margin" Value="0,3" />
+  </Style>
+
+  <Style x:Key="ModeRadioButton" TargetType="RadioButton">
+    <Setter Property="Margin" Value="0,2" />
+  </Style>
+
+  <Style x:Key="LegendBorder" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource LegendBorderBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LegendBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="10" />
+    <Setter Property="Margin" Value="10" />
+  </Style>
+
+  <!-- Reusable style for the slice label border in DrawSliceLabel -->
+  <Style x:Key="SliceLabelBorder" TargetType="Border">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="3,1,3,1" />
+  </Style>
+</ResourceDictionary>
